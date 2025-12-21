@@ -360,7 +360,7 @@ class DeepseekOCRModel(DeepseekV2Model):
         self.sam_model = build_sam_vit_b()
         self.vision_model = build_clip_l()
         # self.conv_2 = nn.Conv2d(in_channels=1024, out_channels=2048, kernel_size=2, stride=2)
-        n_embed = 1280
+        n_embed = config.hidden_size
         self.projector =  MlpProjector(Dict(projector_type="linear", input_dim=2048, n_embed=n_embed))
         embed_std = 1 / torch.sqrt(torch.tensor(n_embed, dtype=torch.float32))
         self.image_newline = nn.Parameter(torch.randn(n_embed) * embed_std)
@@ -517,9 +517,6 @@ class DeepseekOCRForCausalLM(DeepseekV2ForCausalLM):
 
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
-        # self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-
-        # Initialize weights and apply final processing
         self.post_init()
 
     def get_model(self):
@@ -598,11 +595,9 @@ class DeepseekOCRForCausalLM(DeepseekV2ForCausalLM):
             attentions=outputs.attentions,
         )
 
-
     def prepare_inputs_for_generation(
         self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
     ):
-        # Omit tokens covered by past_key_values
         past_length = 0
         if past_key_values is not None:
             if isinstance(past_key_values, Cache):
@@ -682,7 +677,6 @@ class DeepseekOCRForCausalLM(DeepseekV2ForCausalLM):
         import torch
         setattr(torch.nn.Linear, "reset_parameters", lambda self: None)
         setattr(torch.nn.LayerNorm, "reset_parameters", lambda self: None)
-
 
 
     def infer(self, tokenizer, prompt='', image_file='', output_path = '', base_size=1024, image_size=640, crop_mode=True, test_compress=False, save_results=False, eval_mode=False):
