@@ -1,122 +1,87 @@
 {
- "_name_or_path": "deepseek-ai/DeepSeek-OCR",
-  "candidate_resolutions": [
-  [
-   1024,
-   1024
-  ]
- ],
- "global_view_pos": "head",
+  "_name_or_path": "deepseek-ai/DeepSeek-OCR",
   "architectures": [
-      "DeepQwenForCausalLM"
-    ],
+    "DeepQwen2_5VLForConditionalGeneration"
+  ],
   "auto_map": {
-    "AutoConfig": "modeling_deepseekocr.DeepQwenConfig",
-    "AutoModel": "modeling_deepseekocr.DeepQwenForCausalLM"
+    "AutoConfig": "DeepQwen.DeepQwen2_5VLConfig",
+    "AutoModel": "DeepQwen.DeepQwen2_5VLModel",
+    "AutoModelForCausalLM": "DeepQwen.DeepQwen2_5VLForConditionalGeneration"
   },
- "language_config": {
-    "architectures": [
-      "DeepQwenForCausalLM"
-    ],
-    "auto_map": {
-      "AutoConfig": "DeepQween.DeepQwenConfig",
-      "AutoModel": "DeepQween.DeepQwenModel",
-      "AutoModelForCausalLM": "DeepQween.DeepQwenForCausalLM"
-    },
+  "model_type": "DeepQwen2_5VL",
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.46.3",
+  
+  "deepseek_vision_hidden_size": 2048,
+  "use_spatial_merge": false,
+  
+  "candidate_resolutions": [
+    [1024, 1024]
+  ],
+  "global_view_pos": "head",
+  "tile_tag": "2D",
+  
+  "rope_scaling": {
+    "type": "mrope",
+    "mrope_section": [16, 24, 24]
+  },
+  
+  "image_token_id": 151655,
+  "video_token_id": 151656,
+  "vision_start_token_id": 151652,
+  "vision_end_token_id": 151653,
+  "vision_token_id": 151654,
+  
+  "text_config": {
+    "_attn_implementation_autoset": true,
+    "model_type": "qwen2",
     "bos_token_id": 151643,
     "eos_token_id": 151645,
-    "vision_start_token_id": 151652,
-    "vision_end_token_id": 151653,
-    "vision_token_id": 151654,
-    "image_token_id": 151655,
-    "video_token_id": 151656,
     "hidden_size": 2048,
     "intermediate_size": 11008,
     "max_position_embeddings": 128000,
     "max_window_layers": 70,
+    "num_attention_heads": 16,
+    "num_hidden_layers": 36,
+    "num_key_value_heads": 2,
     "rms_norm_eps": 1e-06,
     "rope_theta": 1000000.0,
     "sliding_window": 32768,
     "tie_word_embeddings": true,
-    "num_attention_heads": 16,
-    "num_hidden_layers": 36,
-    "num_key_value_heads": 2,
     "use_cache": true,
-    "use_sliding_window": false,  
-    "topk_group": 1,
-    "topk_method": "greedy",
+    "use_sliding_window": false,
     "torch_dtype": "bfloat16",
     "vocab_size": 151936
   },
-  "rope_scaling": {
-    "type": "mrope",
-    "mrope_section": [
-      16,
-      24,
-      24
-    ]
+  
+  "vision_config": {
+    "model_type": "deepseek_vision",
+    "image_size": 1024,
+    "mlp_ratio": 3.7362,
+    "model_name": "deeplip_b_l",
+    "spatial_merge_size": 2,
+    "width": {
+      "clip-l-14-224": {
+        "heads": 16,
+        "image_size": 224,
+        "layers": 24,
+        "patch_size": 14,
+        "width": 1024
+      },
+      "sam_vit_b": {
+        "downsample_channels": [512, 1024],
+        "global_attn_indexes": [2, 5, 8, 11],
+        "heads": 12,
+        "layers": 12,
+        "width": 768
+      }
+    }
   },
- "model_type": "deepseek_vl_v2",
- "projector_config": {
-  "input_dim": 2048,
-  "model_type": "mlp_projector",
-  "n_embed": 2048,
-  "projector_type": "linear"
- },
- "tile_tag": "2D",
- "torch_dtype": "bfloat16",
- "transformers_version": "4.46.3",
- "vision_config": {
-  "image_size": 1024,
-  "mlp_ratio": 3.7362,
-  "model_name": "deeplip_b_l",
-  "model_type": "vision",
-  "width": {
-   "clip-l-14-224": {
-    "heads": 16,
-    "image_size": 224,
-    "layers": 24,
-    "patch_size": 14,
-    "width": 1024
-   },
-   "sam_vit_b": {
-    "downsample_channels": [
-     512,
-     1024
-    ],
-    "global_attn_indexes": [
-     2,
-     5,
-     8,
-     11
-    ],
-    "heads": 12,
-    "layers": 12,
-    "width": 768
-   }
+  
+  "projector_config": {
+    "input_dim": 2048,
+    "model_type": "mlp_projector",
+    "n_embed": 2048,
+    "projector_type": "linear"
   }
- },
-  "bos_token_id": 151643,
-  "eos_token_id": 151645,
-  "vision_start_token_id": 151652,
-  "vision_end_token_id": 151653,
-  "vision_token_id": 151654,
-  "image_token_id": 151655,
-  "video_token_id": 151656,
-  "hidden_size": 2048,
-  "intermediate_size": 11008,
-  "max_position_embeddings": 128000,
-  "max_window_layers": 70,
-  "rms_norm_eps": 1e-06,
-  "rope_theta": 1000000.0,
-  "sliding_window": 32768,
-  "tie_word_embeddings": true,
-  "num_attention_heads": 16,
-  "num_hidden_layers": 36,
-  "num_key_value_heads": 2,
-  "use_cache": true,
-  "use_sliding_window": false,  
-  "topk_group": 1,
-  "topk_method": "greedy",
-  "vocab_size": 151936
 }
