@@ -335,5 +335,6 @@ class DeepQwenVLForCausalLM(PreTrainedModel, GenerationMixin):
 
 
 __all__ = [
-    "DeepQwenVLModelForCausalLM",
+    "DeepQwenVLModel",
+    "DeepQwenVLForCausalLM",
 ]
