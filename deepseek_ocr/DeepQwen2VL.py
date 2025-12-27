@@ -321,15 +321,21 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
             "projector": "model.projector.",
         }
 
-        for p in prefixes.keys():
-            state_dict = {}
+        try:
+            for p in prefixes.keys():
+                state_dict = {}
 
-            for k, v in vision_weights.items():
-                if k.startswith(prefixes[p]):
-                    new_key = k[len(prefixes[p]):]
-                    state_dict[new_key] = v
+                for k, v in vision_weights.items():
+                    if k.startswith(prefixes[p]):
+                        new_key = k[len(prefixes[p]):]
+                        state_dict[new_key] = v
+                
+                getattr(self, p).load_state_dict(state_dict, strict=False)
             
-            getattr(self, p).load_state_dict(state_dict)
+            print("Pretrained vision model loaded successfully.")
+        except Exception as e:
+            print("Error loading pretrained vision model:", e)
+            raise e
 
 
 
