@@ -2,26 +2,45 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional, List, Union, Tuple
-from transformers import Qwen2VLTextModel, Qwen2VLTextConfig, Qwen2VLModel
-from transformers.models.qwen2_vl.modeling_qwen2_vl import (
-    PatchMerger,
-    Qwen2VLCausalLMOutputWithPast,
-)
-
-from transformers.cache_utils import Cache
+from transformers import Qwen2VLTextModel, Qwen2VLTextConfig, Qwen2VLPreTrainedModel
+from transformers.generation.utils import GenerationMixin
+from transformers.modeling_utils import PreTrainedModel
+from transformers.modeling_outputs import ModelOutput
 from .deepencoder import build_sam_vit_b, build_clip_l, MlpProjector
 from addict import Dict as ADict
 import os
 import math
 
 
-class DeepQwenVLModelForCausalLM(Qwen2VLTextModel):
-    def __init__(
-        self,
-        text_config: Qwen2VLTextConfig,
-        output_hidden_size: int = 2048,  
-    ):
-        super(DeepQwenVLModelForCausalLM, self).__init__(text_config)
+class DeepQwenOutputWithPast(ModelOutput):
+    last_hidden_state: torch.FloatTensor = None
+    past_key_values: Optional[list[torch.FloatTensor]] = None
+    hidden_states: Optional[tuple[torch.FloatTensor]] = None
+    attentions: Optional[tuple[torch.FloatTensor]] = None
+
+class DeepQwenCausalLMOutputWithPast(ModelOutput):
+    loss: Optional[torch.FloatTensor] = None
+    logits: Optional[torch.FloatTensor] = None
+    past_key_values: Optional[list[torch.FloatTensor]] = None
+    hidden_states: Optional[tuple[torch.FloatTensor]] = None
+    attentions: Optional[tuple[torch.FloatTensor]] = None
+
+class DeepQwenVLPreTrainedModel(PreTrainedModel):
+    base_model_prefix = "model"
+    supports_gradient_checkpointing = True
+    _skip_keys_device_placement = "past_key_values"
+    _supports_flash_attn = True
+    _supports_sdpa = True
+
+    _supports_static_cache = True
+    _supports_attention_backend = True
+
+
+class DeepQwenVLModel(Qwen2VLTextModel):
+    
+    def __init__( self, text_config: Qwen2VLTextConfig, output_hidden_size: int = 2048):
+
+        super(DeepQwenVLModel, self).__init__(text_config)
         
         self.output_hidden_size = output_hidden_size
         
@@ -37,13 +56,10 @@ class DeepQwenVLModelForCausalLM(Qwen2VLTextModel):
         embed_std = 1 / torch.sqrt(torch.tensor(output_hidden_size, dtype=torch.float32))
         self.image_newline = nn.Parameter(torch.randn(output_hidden_size) * embed_std)
         self.view_separator = nn.Parameter(torch.randn(output_hidden_size) * embed_std)
-        
-        self.lm_head = nn.Linear(text_config.hidden_size, text_config.vocab_size, bias=False)
 
     def forward(
         self,
         input_ids: torch.LongTensor = None,
-        labels: Optional[torch.LongTensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         past_key_values: Optional[List[torch.FloatTensor]] = None,
@@ -165,10 +181,63 @@ class DeepQwenVLModelForCausalLM(Qwen2VLTextModel):
 
                 idx += 1
 
-        outputs = super(DeepQwenVLModelForCausalLM, self).forward(
+        outputs = super().forward(
             input_ids=None, attention_mask=attention_mask, past_key_values=past_key_values,
             inputs_embeds=inputs_embeds, use_cache=use_cache, position_ids = position_ids,
             output_attentions=output_attentions, output_hidden_states=output_hidden_states,
+            return_dict=return_dict
+        )
+
+        output = DeepQwenOutputWithPast(
+            last_hidden_state=outputs.last_hidden_state,
+            past_key_values=outputs.past_key_values,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+
+        return output if return_dict else output.to_tuple() 
+
+
+class DeepQwenVLForCausalLM(PreTrainedModel, GenerationMixin):
+    def __init__(
+        self,
+        text_config: Qwen2VLTextConfig,
+        output_hidden_size: int = 2048,  
+    ):
+        super().__init__()
+        self.config = text_config
+        self.model = DeepQwenVLModel(text_config, output_hidden_size=output_hidden_size)
+        self.lm_head = nn.Linear(text_config.hidden_size, text_config.vocab_size, bias=False)
+
+    def forward(
+        self,
+        input_ids: torch.LongTensor = None,
+        labels: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        images: Optional[torch.FloatTensor] = None,
+        images_seq_mask: Optional[torch.FloatTensor] = None,
+        images_spatial_crop: Optional[torch.FloatTensor] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[torch.Tensor, List[torch.Tensor]]:
+
+        outputs = self.model(
+            input_ids=input_ids, 
+            attention_mask=attention_mask, 
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds, 
+            use_cache=use_cache, 
+            position_ids = position_ids,
+            output_attentions=output_attentions, 
+            output_hidden_states=output_hidden_states, 
+            images=images,
+            images_seq_mask=images_seq_mask, 
+            images_spatial_crop=images_spatial_crop,
             return_dict=return_dict
         )
 
@@ -191,7 +260,7 @@ class DeepQwenVLModelForCausalLM(Qwen2VLTextModel):
         if labels is not None:
             loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size)
 
-        return Qwen2VLCausalLMOutputWithPast(
+        return DeepQwenCausalLMOutputWithPast(
             loss=loss,
             logits=logits,
             past_key_values=outputs.past_key_values,
@@ -199,56 +268,71 @@ class DeepQwenVLModelForCausalLM(Qwen2VLTextModel):
             attentions=outputs.attentions,
         )
     
+    def prepare_inputs_for_generation(
+        self,
+        input_ids,
+        past_key_values=None,
+        attention_mask = None,
+        inputs_embeds = None,
+        cache_position = None,
+        images = None,
+        images_seq_mask = None,
+        images_spatial_crop = None,
+        **kwargs,
+        ):
+        # Overwritten -- in specific circumstances we don't want to forward image inputs to the model
+
+        model_inputs = super().prepare_inputs_for_generation(
+            input_ids,
+            past_key_values=past_key_values,
+            attention_mask=attention_mask,
+            inputs_embeds=inputs_embeds,
+            cache_position=cache_position,
+            images=images,
+            images_seq_mask=images_seq_mask,
+            images_spatial_crop=images_spatial_crop,
+            **kwargs,
+        )
+
+        # Qwen2-VL position_ids are prepareed with rope_deltas in forward
+        model_inputs["position_ids"] = None
+
+        if model_inputs["cache_position"][0] != 0:
+            model_inputs["pixel_values"] = None
+            model_inputs["pixel_values_videos"] = None
+
+        return model_inputs
+    
     def load_pretrained_vision(self, pretrained_path: str):
-        """Load pretrained DeepSeek OCR vision weights."""
         try:
-            from transformers import AutoModelForCausalLM
-            pretrained = AutoModelForCausalLM.from_pretrained(
-                pretrained_path, 
-                trust_remote_code=True
-            )
+            from safetensors import safe_open
+        except ImportError:
+            raise ImportError("Please install safetensors to load the pretrained vision model.")
+        
+        assert os.path.exists(pretrained_path), f"Pretrained path {pretrained_path} does not exist."
+
+        vision_weights = {}
+        with safe_open(f"{pretrained_path}/model-00001-of-000001.safetensors", framework="pt", device="cpu") as f:
+            for k in f.keys():
+                vision_weights[k] = f.get_tensor(k)
+        
+        prefixes = {
+            "sam_model": "model.sam_model.",
+            "vision_model": "model.vision_model.",
+            "projector": "model.projector.",
+        }
+
+        for p in prefixes.keys():
+            state_dict = {}
+
+            for k, v in vision_weights.items():
+                if k.startswith(prefixes[p]):
+                    new_key = k[len(prefixes[p]):]
+                    state_dict[new_key] = v
             
-            # Load SAM weights
-            if hasattr(pretrained, 'model') and hasattr(pretrained.model, 'sam_model'):
-                self.sam_model.load_state_dict(
-                    pretrained.model.sam_model.state_dict(), 
-                    strict=False
-                )
-                print(f"Loaded SAM weights from {pretrained_path}")
-            
-            # Load CLIP weights
-            if hasattr(pretrained, 'model') and hasattr(pretrained.model, 'vision_model'):
-                self.vision_model.load_state_dict(
-                    pretrained.model.vision_model.state_dict(), 
-                    strict=False
-                )
-                print(f"Loaded CLIP weights from {pretrained_path}")
-            
-            # Load projector weights (may need adjustment if dimensions differ)
-            if hasattr(pretrained, 'model') and hasattr(pretrained.model, 'projector'):
-                try:
-                    self.projector.load_state_dict(
-                        pretrained.model.projector.state_dict(), 
-                        strict=False
-                    )
-                    print(f"Loaded projector weights from {pretrained_path}")
-                except RuntimeError as e:
-                    print(f"Projector dimension mismatch, will train from scratch: {e}")
-            
-            # Load special tokens if available
-            if hasattr(pretrained, 'model') and hasattr(pretrained.model, 'image_newline'):
-                self.image_newline.data.copy_(pretrained.model.image_newline.data)
-                print(f"Loaded image_newline from {pretrained_path}")
-            
-            if hasattr(pretrained, 'model') and hasattr(pretrained.model, 'view_seperator'):
-                self.view_separator.data.copy_(pretrained.model.view_seperator.data)
-                print(f"Loaded view_separator from {pretrained_path}")
-                
-            del pretrained
-            torch.cuda.empty_cache()
-            
-        except Exception as e:
-            print(f"Failed to load pretrained vision weights from {pretrained_path}: {e}")
+            getattr(self, p).load_state_dict(state_dict)
+
+
 
 __all__ = [
     "DeepQwenVLModelForCausalLM",
