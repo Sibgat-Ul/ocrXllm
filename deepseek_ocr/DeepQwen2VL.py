@@ -198,7 +198,7 @@ class DeepQwenVLModel(Qwen2VLTextModel):
         return output if return_dict else output.to_tuple() 
 
 
-class DeepQwenVLForCausalLM(PreTrainedModel, GenerationMixin):
+class DeepQwenVLForCausalLM(Qwen2VLPreTrainedModel, GenerationMixin):
     def __init__(
         self,
         text_config: Qwen2VLTextConfig,
