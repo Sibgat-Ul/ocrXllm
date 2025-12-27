@@ -198,15 +198,14 @@ class DeepQwenVLModel(Qwen2VLTextModel):
         return output if return_dict else output.to_tuple() 
 
 
-class DeepQwenVLForCausalLM(Qwen2VLPreTrainedModel, GenerationMixin):
+class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
     def __init__(
         self,
         text_config: Qwen2VLTextConfig,
         output_hidden_size: int = 2048,  
     ):
-        super().__init__()
+        super().__init__(text_config, output_hidden_size=output_hidden_size)
         self.config = text_config
-        self.model = DeepQwenVLModel(text_config, output_hidden_size=output_hidden_size)
         self.lm_head = nn.Linear(text_config.hidden_size, text_config.vocab_size, bias=False)
 
     def forward(
@@ -226,7 +225,7 @@ class DeepQwenVLForCausalLM(Qwen2VLPreTrainedModel, GenerationMixin):
         return_dict: Optional[bool] = None,
     ) -> Union[torch.Tensor, List[torch.Tensor]]:
 
-        outputs = self.model(
+        outputs = super().forward(
             input_ids=input_ids, 
             attention_mask=attention_mask, 
             past_key_values=past_key_values,
