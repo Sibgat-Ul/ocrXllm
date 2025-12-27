@@ -318,7 +318,6 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
         prefixes = {
             "sam_model": "model.sam_model.",
             "vision_model": "model.vision_model.",
-            "projector": "model.projector.",
         }
 
         try:
