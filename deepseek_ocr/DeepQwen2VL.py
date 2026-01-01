@@ -121,10 +121,10 @@ class DeepQwenVLModel(Qwen2VLTextModel):
                         global_features = torch.cat((global_features_2[:, 1:], global_features_1.flatten(2).permute(0, 2, 1)), dim=-1) 
                         global_features = self.projector(global_features)
 
-                        print('=====================')
-                        print('BASE: ', global_features.shape)
-                        print('PATCHES: ', local_features.shape)
-                        print('=====================')
+                        # print('=====================')
+                        # print('BASE: ', global_features.shape)
+                        # print('PATCHES: ', local_features.shape)
+                        # print('=====================')
 
                         _, hw, n_dim = global_features.shape
                         h = w = int(hw ** 0.5)
@@ -164,10 +164,10 @@ class DeepQwenVLModel(Qwen2VLTextModel):
                         global_features_2 = vision_model(image_ori, global_features_1) 
                         global_features = torch.cat((global_features_2[:, 1:], global_features_1.flatten(2).permute(0, 2, 1)), dim=-1) 
                         global_features = self.projector(global_features)
-                        print('=====================')
-                        print('BASE: ', global_features.shape)
-                        print('NO PATCHES')
-                        print('=====================')
+                        # print('=====================')
+                        # print('BASE: ', global_features.shape)
+                        # print('NO PATCHES')
+                        # print('=====================')
                         _, hw, n_dim = global_features.shape
                         h = w = int(hw ** 0.5)
 
@@ -349,7 +349,14 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
         except Exception as e:
             print("Error loading pretrained vision model:", e)
             raise e
-
+            
+    def disable_torch_init(self):
+        """
+        Disable the redundant torch default initialization to accelerate model creation.
+        """
+        import torch
+        setattr(torch.nn.Linear, "reset_parameters", lambda self: None)
+        setattr(torch.nn.LayerNorm, "reset_parameters", lambda self: None)
 
     def infer(self, tokenizer, prompt='', image_file='', output_path = '', base_size=1024, image_size=640, crop_mode=True, test_compress=False, save_results=False, eval_mode=False):
         self.disable_torch_init()
