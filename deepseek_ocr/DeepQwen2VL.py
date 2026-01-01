@@ -11,7 +11,7 @@ from .deepencoder import build_sam_vit_b, build_clip_l, MlpProjector
 from addict import Dict as ADict
 import os
 import math
-from preprocessors_utils_dq import (
+from .preprocessors_utils_dq import (
     format_messages,
     load_pil_images,
     text_encode,
