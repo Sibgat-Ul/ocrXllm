@@ -149,9 +149,6 @@ def process_image_with_refs(image, ref_texts, output_path):
     return result_image
 
 
-
-
-
 def find_closest_aspect_ratio(aspect_ratio, target_ratios, width, height, image_size):
     best_ratio_diff = float('inf')
     best_ratio = (1, 1)

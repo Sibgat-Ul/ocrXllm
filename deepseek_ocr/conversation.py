@@ -205,6 +205,7 @@ register_conv_template(
         stop_str=["User:", "<｜end▁of▁sentence｜>"]
     )
 )
+
 register_conv_template(
     Conversation(
         name="deepseekv2",
