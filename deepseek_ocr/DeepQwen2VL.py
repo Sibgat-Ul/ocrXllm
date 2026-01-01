@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from typing import Optional, List, Union, Tuple
 from transformers import Qwen2VLTextModel, Qwen2VLTextConfig, Qwen2VLPreTrainedModel
 from transformers.generation.utils import GenerationMixin
 from transformers.modeling_utils import PreTrainedModel
-from transformers.modeling_outputs import ModelOutput
+from transformers.utils import ModelOutput
 from PIL import Image, ImageOps
 from .deepencoder import build_sam_vit_b, build_clip_l, MlpProjector
 from addict import Dict as ADict
@@ -22,13 +21,16 @@ from .preprocessors_utils_dq import (
     NoEOSTextStreamer,
 )
 from tqdm import tqdm
+from dataclasses import dataclass
 
+@dataclass
 class DeepQwenOutputWithPast(ModelOutput):
     last_hidden_state: torch.FloatTensor = None
     past_key_values: Optional[list[torch.FloatTensor]] = None
     hidden_states: Optional[tuple[torch.FloatTensor]] = None
     attentions: Optional[tuple[torch.FloatTensor]] = None
 
+@dataclass
 class DeepQwenCausalLMOutputWithPast(ModelOutput):
     loss: Optional[torch.FloatTensor] = None
     logits: Optional[torch.FloatTensor] = None
