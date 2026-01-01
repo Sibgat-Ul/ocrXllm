@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from typing import Optional, List, Union, Tuple
 from transformers import Qwen2VLTextModel, Qwen2VLTextConfig, Qwen2VLPreTrainedModel
 from transformers.generation.utils import GenerationMixin
 from transformers.modeling_utils import PreTrainedModel
-from transformers.utils import ModelOutput
+from transformers.modeling_outputs import ModelOutput
 from PIL import Image, ImageOps
 from .deepencoder import build_sam_vit_b, build_clip_l, MlpProjector
 from addict import Dict as ADict
@@ -250,7 +251,7 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
             images=images,
             images_seq_mask=images_seq_mask, 
             images_spatial_crop=images_spatial_crop,
-            return_dict=return_dict
+            return_dict=True
         )
 
         hidden_states = outputs[0]
