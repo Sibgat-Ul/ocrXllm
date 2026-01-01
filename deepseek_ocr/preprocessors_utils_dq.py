@@ -140,7 +140,7 @@ def find_closest_aspect_ratio(aspect_ratio, target_ratios, width, height, image_
             if area > 0.5 * image_size * image_size * ratio[0] * ratio[1]:
                 best_ratio = ratio
 
-    print(f'width: {width}, height: {height}, best_ratio: {best_ratio}')
+    # print(f'width: {width}, height: {height}, best_ratio: {best_ratio}')
     return best_ratio
 
 
@@ -152,7 +152,7 @@ def dynamic_preprocess(image, min_num=2, max_num=9, image_size=640, use_thumbnai
     target_ratios = set((i, j) for n in range(min_num, max_num + 1) for i in range(1, n + 1) for j in range(1, n + 1) if i * j <= max_num and i * j >= min_num)
     
     target_ratios = sorted(target_ratios, key=lambda x: x[0] * x[1])
-    print(f"target_ratios: {target_ratios}")
+    # print(f"target_ratios: {target_ratios}")
 
     target_aspect_ratio = find_closest_aspect_ratio(
         aspect_ratio, 
@@ -161,7 +161,7 @@ def dynamic_preprocess(image, min_num=2, max_num=9, image_size=640, use_thumbnai
         orig_height, 
         image_size
     )
-    print(f"target_aspect_ratio: {target_aspect_ratio}")
+    # print(f"target_aspect_ratio: {target_aspect_ratio}")
 
     # calculate the target width and height
     target_width = image_size * target_aspect_ratio[0]
@@ -183,7 +183,7 @@ def dynamic_preprocess(image, min_num=2, max_num=9, image_size=640, use_thumbnai
         processed_images.append(split_img)
 
     assert len(processed_images) == blocks
-    print(f"Number of processed images: {len(processed_images)}, Blocks: {blocks}")
+    # print(f"Number of processed images: {len(processed_images)}, Blocks: {blocks}")
 
     if use_thumbnail and len(processed_images) != 1:
         thumbnail_img = image.resize((image_size, image_size))
