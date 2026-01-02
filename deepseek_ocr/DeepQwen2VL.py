@@ -310,12 +310,7 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
             **kwargs,
         )
 
-        # Qwen2-VL position_ids are prepareed with rope_deltas in forward
         model_inputs["position_ids"] = None
-
-        if model_inputs["cache_position"][0] != 0:
-            model_inputs["pixel_values"] = None
-            model_inputs["pixel_values_videos"] = None
 
         return model_inputs
     
@@ -572,12 +567,12 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
                         images_spatial_crop = images_spatial_crop,
                         # do_sample=False,
                         # num_beams = 1,
-                        temperature=0.0,
+                        temperature=0.5,
                         eos_token_id=tokenizer.eos_token_id,
                         max_new_tokens=8192,
                         no_repeat_ngram_size = 35,
                         use_cache = True
-                        )
+                    )
                 
 
         # Check if conversation has image (handle both string and list content formats)
