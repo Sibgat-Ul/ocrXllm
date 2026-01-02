@@ -85,6 +85,7 @@ class DeepQwenVLModel(Qwen2VLTextModel):
         images_seq_mask: Optional[torch.FloatTensor] = None,
         images_spatial_crop: Optional[torch.FloatTensor] = None,
         return_dict: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
     ) -> Union[torch.Tensor, List[torch.Tensor]]:
 
         if inputs_embeds is None:
@@ -199,7 +200,7 @@ class DeepQwenVLModel(Qwen2VLTextModel):
             input_ids=None, attention_mask=attention_mask, past_key_values=past_key_values,
             inputs_embeds=inputs_embeds, use_cache=use_cache, position_ids = position_ids,
             output_attentions=output_attentions, output_hidden_states=output_hidden_states,
-            return_dict=return_dict
+            return_dict=return_dict, cache_position=cache_position
         )
 
         output = DeepQwenOutputWithPast(
@@ -237,6 +238,7 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
         images_seq_mask: Optional[torch.FloatTensor] = None,
         images_spatial_crop: Optional[torch.FloatTensor] = None,
         return_dict: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
     ) -> Union[torch.Tensor, List[torch.Tensor]]:
 
         outputs = super().forward(
@@ -251,7 +253,8 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
             images=images,
             images_seq_mask=images_seq_mask, 
             images_spatial_crop=images_spatial_crop,
-            return_dict=True
+            return_dict=True,
+            cache_position=cache_position,
         )
 
         hidden_states = outputs[0]
@@ -551,13 +554,13 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
                         images_spatial_crop = images_spatial_crop,
                         # do_sample=False,
                         # num_beams = 1,
-                        temperature=0.0,
+                        temperature=0.5,
                         eos_token_id=tokenizer.eos_token_id,
                         streamer=streamer,
                         max_new_tokens=8192,
                         no_repeat_ngram_size = 20,
                         use_cache = True
-                        )
+                    )
 
         else:
             with torch.autocast("cuda", dtype=torch.bfloat16):
