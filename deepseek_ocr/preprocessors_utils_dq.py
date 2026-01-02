@@ -255,12 +255,14 @@ def load_pil_images(conversations: List[Dict[str, str]]) -> List[Image.Image]:
             if isinstance(message["content"], List):
                 for d in message["content"]:
                     if d.get("type", "") == "image":
-                        image_path = d.get("data", "")
+                        # Support both "image" (Qwen format) and "data" keys
+                        image_path = d.get("image") or d.get("data", "")
                         pil_image = load_image(image_path)
 
             elif isinstance(message["content"], Dict):
                 if message["content"].get("type", "") == "image":
-                    image_path = message["content"].get("data", "")
+                    # Support both "image" (Qwen format) and "data" keys
+                    image_path = message["content"].get("image") or message["content"].get("data", "")
                     pil_image = load_image(image_path)
 
             if pil_image is not None:

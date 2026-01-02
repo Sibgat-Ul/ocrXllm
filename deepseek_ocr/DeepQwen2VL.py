@@ -522,9 +522,6 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
 
         input_ids = torch.LongTensor(tokenized_str)
 
-
-        
-
         images_seq_mask = torch.tensor(images_seq_mask, dtype=torch.bool)
 
 
