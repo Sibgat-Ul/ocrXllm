@@ -312,6 +312,13 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
 
         model_inputs["position_ids"] = None
 
+        # After prefill (first step), clear image inputs to avoid dimension mismatch
+        # cache_position[0] != 0 means we're past the first generation step
+        if cache_position is not None and cache_position[0] != 0:
+            model_inputs["images"] = None
+            model_inputs["images_seq_mask"] = None
+            model_inputs["images_spatial_crop"] = None
+
         return model_inputs
     
     def load_pretrained_vision(self, pretrained_path: str):
@@ -358,7 +365,9 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
 
     def infer(self, tokenizer, prompt='', image_file='', output_path = '', base_size=1024, image_size=640, crop_mode=True, test_compress=False, save_results=False, eval_mode=False):
         self.disable_torch_init()
-
+        
+        os.makedirs(output_path, exist_ok=True)
+        os.makedirs(f'{output_path}/images', exist_ok=True)
         # Qwen2.5-VL native message format
         conversation = [
             {
@@ -628,6 +637,7 @@ class DeepQwenVLForCausalLM(DeepQwenVLModel, GenerationMixin):
 
             # if 'structural formula' in conversation[0]['content']:
             #     outputs = '<smiles>' + outputs + '</smiles>'
+
             with open(f'{output_path}/result.mmd', 'w', encoding = 'utf-8') as afile:
                 afile.write(outputs)
 
